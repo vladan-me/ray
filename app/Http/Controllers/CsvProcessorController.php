@@ -70,39 +70,35 @@ class CsvProcessorController extends Controller
         foreach ($phoneFields as $field) {
             $dncField = $field . '_DNC';
 
-            if (empty($record[$field])) {
-                $record[$dncField] = ''; // Clear DNC if phone is empty
+            // If the phone number or DNC data is missing, we can't proceed. Clear both.
+            if (empty($record[$field]) || empty($record[$dncField])) {
+                $record[$field] = '';
+                $record[$dncField] = '';
                 continue;
             }
 
-            if (!empty($record[$dncField])) {
-                $phoneNumbers = array_map('trim', explode(',', $record[$field]));
-                $dncFlags = array_map('trim', explode(',', $record[$dncField]));
+            $phoneNumbers = array_map('trim', explode(',', $record[$field]));
+            $dncFlags = array_map('trim', explode(',', $record[$dncField]));
 
-                $foundNumber = null;
-                $foundDnc = null;
+            $numberToKeep = null;
+            $dncToKeep = null;
 
-                // Find the first number with a corresponding 'N' DNC flag
-                foreach ($dncFlags as $index => $flag) {
-                    if (strtoupper($flag) === 'N' && isset($phoneNumbers[$index])) {
-                        $foundNumber = $phoneNumbers[$index];
-                        $foundDnc = 'N';
-                        break; // Stop after finding the first one
-                    }
+            // Find the first number with a corresponding 'N' DNC flag
+            foreach ($dncFlags as $index => $flag) {
+                if (strtoupper($flag) === 'N' && isset($phoneNumbers[$index])) {
+                    $numberToKeep = $phoneNumbers[$index];
+                    $dncToKeep = 'N';
+                    break; // Found our number, no need to look further
                 }
+            }
 
-                // If no 'N' flag number was found, just take the first number
-                if ($foundNumber === null && count($phoneNumbers) > 0) {
-                    $foundNumber = $phoneNumbers[0];
-                    $foundDnc = $dncFlags[0] ?? 'Y';
-                }
-
-                // Clean the phone number (remove spaces)
-                if ($foundNumber) {
-                    $cleanedNumber = str_replace(' ', '', $foundNumber);
-                    $record[$field] = $cleanedNumber;
-                    $record[$dncField] = $foundDnc;
-                }
+            // If we found a number with an 'N' flag, keep it. Otherwise, clear the fields.
+            if ($numberToKeep !== null) {
+                $record[$field] = str_replace(' ', '', $numberToKeep);
+                $record[$dncField] = $dncToKeep;
+            } else {
+                $record[$field] = '';
+                $record[$dncField] = '';
             }
         }
 
