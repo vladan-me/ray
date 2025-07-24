@@ -28,9 +28,9 @@ class CsvProcessorController extends Controller
         $csv = Reader::createFromPath($path, 'r');
 
         $possibleDelimiters = [
-            ',
-            '|
-            "	",
+            ',',
+            '|',
+            "\t",
             ';',
         ];
 
