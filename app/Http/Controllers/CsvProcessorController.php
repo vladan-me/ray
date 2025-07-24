@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use League\Csv\Reader;
+use League\Csv\Info;
 use League\Csv\Statement;
 use League\Csv\Writer;
 use SplTempFileObject;
@@ -25,7 +26,19 @@ class CsvProcessorController extends Controller
 
         $path = $request->file('csv_file')->getRealPath();
         $csv = Reader::createFromPath($path, 'r');
-        $csv->setDelimiter(';');
+
+        $possibleDelimiters = [
+            ',
+            '|
+            "	",
+            ';',
+        ];
+
+        $stats = Info::getDelimiterStats($csv, $possibleDelimiters, 2);
+        arsort($stats);
+        $delimiter = array_keys($stats)[0];
+
+        $csv->setDelimiter($delimiter);
         $csv->setHeaderOffset(0);
 
         // Prepare a new CSV in memory to write the cleaned data
